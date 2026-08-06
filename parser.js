@@ -202,6 +202,13 @@ function parseText(text) {
     }
   });
 
+const caseObservations = applyCaseRules(
+  text,
+  tokens
+);
+
+observations.push(...caseObservations);
+  
   return {
     text,
     tokens,
