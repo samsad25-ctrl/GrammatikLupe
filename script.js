@@ -8,21 +8,15 @@ document.addEventListener("DOMContentLoaded", () => {
       placeholder: "Füge deinen Text hier ein …",
       analyseButton: "Text analysieren",
       analysing: "Analyse läuft …",
-      resultTitle: "Sprachliche Beobachtungen",
+      resultTitle: "Lernhinweise",
       noText: "Bitte füge zuerst einen Text ein.",
+      noDiagnosis:
+        "In diesem Text wurde noch kein eindeutiger Lernschwerpunkt erkannt.",
+      noDiagnosisNote:
+        "Das bedeutet nicht automatisch, dass alle Bereiche sicher sind. Möglicherweise enthält der Text noch nicht genügend auswertbare Strukturen.",
+      recommendationTitle: "Empfehlung",
       wordSingular: "Wort",
-      wordPlural: "Wörter",
-      sentenceSingular: "Satz",
-      sentencePlural: "Sätze",
-      detected: "Erkannte Strukturen",
-      articles: "Artikel",
-      pronouns: "Pronomen",
-      prepositions: "Präpositionen",
-      conjunctions: "Konjunktionen",
-      subordinate: "Nebensatzeinleiter",
-      none: "keine erkannt",
-      notice:
-        "Diese Version beschreibt sprachliche Strukturen. Eine Kompetenzdiagnose wird im nächsten Entwicklungsschritt ergänzt."
+      wordPlural: "Wörter"
     },
 
     zh: {
@@ -32,59 +26,21 @@ document.addEventListener("DOMContentLoaded", () => {
       placeholder: "请在此处粘贴德语作文……",
       analyseButton: "开始分析",
       analysing: "正在分析……",
-      resultTitle: "语言结构观察",
+      resultTitle: "学习提示",
       noText: "请先输入一篇德语作文。",
+      noDiagnosis:
+        "当前文本中尚未识别出明确的学习重点。",
+      noDiagnosisNote:
+        "这并不表示所有语法领域都已经掌握。文本中可能还没有出现足够的可分析结构。",
+      recommendationTitle: "建议",
       wordSingular: "个词",
-      wordPlural: "个词",
-      sentenceSingular: "个句子",
-      sentencePlural: "个句子",
-      detected: "识别到的语言结构",
-      articles: "冠词",
-      pronouns: "代词",
-      prepositions: "介词",
-      conjunctions: "连词",
-      subordinate: "从句连接词",
-      none: "未识别到",
-      notice:
-        "当前版本只描述文本中的语言结构。能力诊断将在下一开发阶段加入。"
+      wordPlural: "个词"
     }
-  };
-
-  const wordGroups = {
-    articles: [
-      "der", "die", "das", "den", "dem", "des",
-      "ein", "eine", "einen", "einem", "einer", "eines",
-      "kein", "keine", "keinen", "keinem", "keiner", "keines"
-    ],
-
-    pronouns: [
-      "ich", "du", "er", "sie", "es", "wir", "ihr",
-      "mich", "dich", "ihn", "uns", "euch",
-      "mir", "dir", "ihm", "ihnen",
-      "mein", "dein", "sein", "unser", "euer"
-    ],
-
-    prepositions: [
-      "an", "auf", "aus", "bei", "durch", "für",
-      "gegen", "hinter", "in", "mit", "nach", "neben",
-      "ohne", "über", "um", "unter", "von", "vor",
-      "zu", "zwischen", "seit", "während", "wegen"
-    ],
-
-    conjunctions: [
-      "aber", "denn", "oder", "sondern", "und",
-      "deshalb", "darum", "trotzdem", "danach"
-    ],
-
-    subordinate: [
-      "als", "bevor", "bis", "da", "damit", "dass",
-      "falls", "nachdem", "ob", "obwohl", "seitdem",
-      "sobald", "solange", "während", "weil", "wenn"
-    ]
   };
 
   let currentLanguage = "de";
   let lastAnalysis = null;
+  let lastDiagnoses = [];
 
   const btnDeutsch = document.getElementById("btnDeutsch");
   const btnChinesisch = document.getElementById("btnChinesisch");
@@ -102,125 +58,83 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultMessage =
     document.getElementById("resultMessage");
 
-  function getWords(text) {
-    return text.match(/\p{L}+(?:['’-]\p{L}+)*|\d+/gu) || [];
-  }
+  function countWords(text) {
+    const matches =
+      text.match(/\p{L}+(?:['’-]\p{L}+)*|\d+/gu);
 
-  function countSentences(text) {
-    return text
-      .split(/[.!?]+/)
-      .map(sentence => sentence.trim())
-      .filter(Boolean)
-      .length;
-  }
-
-  function findWords(words, vocabulary) {
-    const lowerCaseWords = words.map(word => word.toLowerCase());
-
-    return [...new Set(
-      lowerCaseWords.filter(word => vocabulary.includes(word))
-    )];
-  }
-
-  function createAnalysis(text) {
-    const words = getWords(text);
-
-    return {
-      wordCount: words.length,
-      sentenceCount: countSentences(text),
-      articles: findWords(words, wordGroups.articles),
-      pronouns: findWords(words, wordGroups.pronouns),
-      prepositions: findWords(words, wordGroups.prepositions),
-      conjunctions: findWords(words, wordGroups.conjunctions),
-      subordinate: findWords(words, wordGroups.subordinate)
-    };
-  }
-
-  function formatList(items, language) {
-    return items.length > 0
-      ? items.join(", ")
-      : language.none;
-  }
-
-  function renderAnalysis() {
-    if (!lastAnalysis) {
-      return;
-    }
-
-    const language = translations[currentLanguage];
-    const analysis = lastAnalysis;
-
-    const wordLabel =
-      currentLanguage === "de" && analysis.wordCount === 1
-        ? language.wordSingular
-        : language.wordPlural;
-
-    const sentenceLabel =
-      currentLanguage === "de" && analysis.sentenceCount === 1
-        ? language.sentenceSingular
-        : language.sentencePlural;
-
-    resultTitle.textContent = language.resultTitle;
-
-    resultMessage.innerHTML = `
-      <p>
-        <strong>${analysis.wordCount} ${wordLabel}</strong>
-        ·
-        <strong>${analysis.sentenceCount} ${sentenceLabel}</strong>
-      </p>
-
-      <h3>${language.detected}</h3>
-
-      <ul>
-        <li>
-          <strong>${language.articles}:</strong>
-          ${formatList(analysis.articles, language)}
-        </li>
-
-        <li>
-          <strong>${language.pronouns}:</strong>
-          ${formatList(analysis.pronouns, language)}
-        </li>
-
-        <li>
-          <strong>${language.prepositions}:</strong>
-          ${formatList(analysis.prepositions, language)}
-        </li>
-
-        <li>
-          <strong>${language.conjunctions}:</strong>
-          ${formatList(analysis.conjunctions, language)}
-        </li>
-
-        <li>
-          <strong>${language.subordinate}:</strong>
-          ${formatList(analysis.subordinate, language)}
-        </li>
-      </ul>
-
-      <p><em>${language.notice}</em></p>
-    `;
+    return matches ? matches.length : 0;
   }
 
   function updateWordCounter() {
-    const numberOfWords = getWords(studentText.value).length;
+    const count = countWords(studentText.value);
     const language = translations[currentLanguage];
 
     if (currentLanguage === "de") {
       const label =
-        numberOfWords === 1
+        count === 1
           ? language.wordSingular
           : language.wordPlural;
 
-      wordCounter.textContent = `${numberOfWords} ${label}`;
-    } else {
-      wordCounter.textContent =
-        `${numberOfWords} ${language.wordPlural}`;
+      wordCounter.textContent = `${count} ${label}`;
+      return;
     }
+
+    wordCounter.textContent =
+      `${count} ${language.wordPlural}`;
+  }
+
+  function renderDiagnosisCard(diagnosis) {
+    const language = translations[currentLanguage];
+
+    return `
+      <article class="diagnosis-card">
+        <h3>${diagnosis.title[currentLanguage]}</h3>
+
+        <p>
+          ${diagnosis.feedback[currentLanguage]}
+        </p>
+
+        <div class="recommendation">
+          <strong>${language.recommendationTitle}</strong>
+
+          <p>
+            ${diagnosis.recommendation[currentLanguage]}
+          </p>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderResults() {
+    const language = translations[currentLanguage];
+
+    resultTitle.textContent = language.resultTitle;
+
+    if (lastDiagnoses.length === 0) {
+      resultMessage.innerHTML = `
+        <div class="no-diagnosis">
+          <p>
+            <strong>${language.noDiagnosis}</strong>
+          </p>
+
+          <p>
+            ${language.noDiagnosisNote}
+          </p>
+        </div>
+      `;
+
+      return;
+    }
+
+    resultMessage.innerHTML =
+      lastDiagnoses
+        .map(renderDiagnosisCard)
+        .join("");
   }
 
   function changeLanguage(languageCode) {
     currentLanguage = languageCode;
+
     const language = translations[languageCode];
 
     document.documentElement.lang =
@@ -233,8 +147,21 @@ document.addEventListener("DOMContentLoaded", () => {
     studentText.placeholder = language.placeholder;
     analyseButton.textContent = language.analyseButton;
 
+    btnDeutsch.classList.toggle(
+      "active",
+      languageCode === "de"
+    );
+
+    btnChinesisch.classList.toggle(
+      "active",
+      languageCode === "zh"
+    );
+
     updateWordCounter();
-    renderAnalysis();
+
+    if (lastAnalysis) {
+      renderResults();
+    }
   }
 
   function analyseText() {
@@ -251,18 +178,40 @@ document.addEventListener("DOMContentLoaded", () => {
     analyseButton.textContent = language.analysing;
 
     window.setTimeout(() => {
-      lastAnalysis = createAnalysis(text);
-      resultSection.hidden = false;
-      renderAnalysis();
+      try {
+        lastAnalysis = parseText(text);
+        lastDiagnoses = runDiagnosis(lastAnalysis);
 
-      analyseButton.disabled = false;
-      analyseButton.textContent = language.analyseButton;
+        resultSection.hidden = false;
+        renderResults();
 
-      resultSection.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }, 400);
+        resultSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      } catch (error) {
+        console.error(
+          "Fehler bei der GrammatikLupe-Analyse:",
+          error
+        );
+
+        resultSection.hidden = false;
+
+        resultTitle.textContent =
+          currentLanguage === "de"
+            ? "Technischer Hinweis"
+            : "技术提示";
+
+        resultMessage.textContent =
+          currentLanguage === "de"
+            ? "Die Analyse konnte nicht ausgeführt werden. Bitte lade die Seite neu."
+            : "分析无法运行。请重新加载页面。";
+      } finally {
+        analyseButton.disabled = false;
+        analyseButton.textContent =
+          translations[currentLanguage].analyseButton;
+      }
+    }, 350);
   }
 
   btnDeutsch.addEventListener("click", () => {
@@ -273,8 +222,15 @@ document.addEventListener("DOMContentLoaded", () => {
     changeLanguage("zh");
   });
 
-  studentText.addEventListener("input", updateWordCounter);
-  analyseButton.addEventListener("click", analyseText);
+  studentText.addEventListener(
+    "input",
+    updateWordCounter
+  );
+
+  analyseButton.addEventListener(
+    "click",
+    analyseText
+  );
 
   changeLanguage("de");
 });
