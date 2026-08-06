@@ -1,67 +1,49 @@
-function runDiagnosis(observations) {
+function runDiagnosis(analysis) {
+  if (
+    !analysis ||
+    !Array.isArray(analysis.observations)
+  ) {
+    return [];
+  }
 
-    const results = [];
+  const observationTypes = new Set(
+    analysis.observations.map(observation => observation.type)
+  );
 
-    DIAGNOSIS_MODEL.forEach(card => {
+  const results = [];
 
-        let observable = false;
+  DIAGNOSIS_MODEL.forEach(card => {
+    const isObservable = card.observableThrough.some(type =>
+      observationTypes.has(type)
+    );
 
-        card.observableThrough.forEach(obs => {
+    if (!isObservable) {
+      return;
+    }
 
-            if(observations.includes(obs)){
-                observable = true;
-            }
+    const matchedIndicators = card.indicators.filter(indicator =>
+      observationTypes.has(indicator)
+    );
 
-        });
+    if (matchedIndicators.length === 0) {
+      return;
+    }
 
-        if(!observable){
-            return;
-        }
+    const evidence = analysis.observations.filter(observation =>
+      matchedIndicators.includes(observation.type)
+    );
 
-        let score = 0;
-
-        card.indicators.forEach(indicator => {
-
-            if(observations.includes(indicator)){
-                score++;
-            }
-
-        });
-
-        if(score > 0){
-
-            results.push({
-
-                id: card.id,
-
-                title: card.title,
-
-                feedback: card.feedback,
-
-                recommendation: card.recommendation,
-
-                priority: card.priority,
-
-                score: score
-
-            });
-
-        }
-
+    results.push({
+      id: card.id,
+      title: card.title,
+      feedback: card.feedback,
+      recommendation: card.recommendation,
+      priority: card.priority,
+      evidence
     });
+  });
 
-    results.sort((a,b)=>{
+  results.sort((a, b) => b.priority - a.priority);
 
-        if(a.priority !== b.priority){
-
-            return b.priority-a.priority;
-
-        }
-
-        return b.score-a.score;
-
-    });
-
-    return results.slice(0,3);
-
+  return results.slice(0, 3);
 }
