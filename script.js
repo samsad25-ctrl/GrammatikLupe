@@ -180,7 +180,19 @@ document.addEventListener("DOMContentLoaded", () => {
     window.setTimeout(() => {
       try {
         lastAnalysis = parseText(text);
+
+        console.log("ANALYSIS:", lastAnalysis);
+        console.log(
+          "OBSERVATIONS:",
+          lastAnalysis.observations
+        );
+
         lastDiagnoses = runDiagnosis(lastAnalysis);
+
+        console.log(
+          "DIAGNOSES:",
+          lastDiagnoses
+        );
 
         resultSection.hidden = false;
         renderResults();
