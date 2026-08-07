@@ -208,7 +208,17 @@ const caseObservations = applyCaseRules(
 );
 
 observations.push(...caseObservations);
-  
+
+const twoWayObservations =
+  applyTwoWayPrepositionRules(
+    text,
+    tokens
+  );
+
+observations.push(
+  ...twoWayObservations
+);
+
   return {
     text,
     tokens,
