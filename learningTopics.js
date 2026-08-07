@@ -196,4 +196,99 @@ const LEARNING_TOPICS = Object.freeze([
 
     priority: 115
   }
+
+  ,
+{
+  id: "PREP_TEMPORAL_DURATION",
+
+  family: "PREPOSITIONS",
+  parent: "PREP_TEMPORAL",
+  level: 3,
+
+  learningTopic: {
+    de:
+      "Temporale Präpositionen – Zeitdauer",
+    zh:
+      "时间介词——持续时间"
+  },
+
+  observableThrough: [
+    OBS.TEMPORAL_DURATION_FOUND
+  ],
+
+  indicators: [
+    OBS.TEMPORAL_DURATION_UNCERTAIN
+  ],
+
+  why: {
+    de:
+      "In deinem Text gibt es Hinweise darauf, dass temporale Präpositionen zur Angabe einer Zeitdauer noch nicht sicher verwendet werden.",
+    zh:
+      "你的文本中显示，表示持续时间的介词使用还不够稳定。"
+  },
+
+  review: {
+    de: [
+      "Zeitdauer",
+      "Wie lange?",
+      "seit",
+      "für"
+    ],
+
+    zh: [
+      "持续时间",
+      "Wie lange?",
+      "seit",
+      "für"
+    ]
+  },
+
+  priority: 120
+},
+
+{
+  id: "PREP_TEMPORAL_PERIOD",
+
+  family: "PREPOSITIONS",
+  parent: "PREP_TEMPORAL",
+  level: 3,
+
+  learningTopic: {
+    de:
+      "Temporale Präpositionen – Zeitraum",
+    zh:
+      "时间介词——时间范围"
+  },
+
+  observableThrough: [
+    OBS.TEMPORAL_PERIOD_FOUND
+  ],
+
+  indicators: [
+    OBS.TEMPORAL_PERIOD_UNCERTAIN
+  ],
+
+  why: {
+    de:
+      "In deinem Text gibt es Hinweise darauf, dass Zeiträume mit Präpositionen noch nicht sicher ausgedrückt werden.",
+    zh:
+      "你的文本中显示，使用介词表达时间范围还不够稳定。"
+  },
+
+  review: {
+    de: [
+      "Zeitraum",
+      "von ... bis ...",
+      "zwischen ... und ..."
+    ],
+
+    zh: [
+      "时间范围",
+      "von ... bis ...",
+      "zwischen ... und ..."
+    ]
+  },
+
+  priority: 120
+}
 ]);

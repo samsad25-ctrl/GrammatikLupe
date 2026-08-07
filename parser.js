@@ -410,6 +410,16 @@ function parseText(text) {
     ...twoWayObservations
   );
 
+const temporalObservations =
+  applyTemporalPrepositionRules(
+    text,
+    tokens
+  );
+
+observations.push(
+  ...temporalObservations
+);
+
   return {
     text,
 

@@ -15,38 +15,111 @@ function runDiagnosis(analysis) {
   const candidates = [];
 
   LEARNING_TOPICS.forEach(topic => {
+    /*
+     * Ist dieser Lernbereich
+     * im Text überhaupt beobachtbar?
+     */
     const observable =
-      topic.observableThrough.some(type =>
-        observationTypes.has(type)
+      topic.observableThrough.some(
+        type =>
+          observationTypes.has(type)
       );
 
     if (!observable) {
       return;
     }
 
-    const matchedIndicators =
-      topic.indicators.filter(type =>
-        observationTypes.has(type)
-      );
-
-    if (matchedIndicators.length === 0) {
-      return;
-    }
-
-    const evidence =
+    /*
+     * Nur Beobachtungen verwenden,
+     * die zu diesem Lernknoten gehören.
+     */
+    const rawEvidence =
       analysis.observations.filter(
         observation =>
-          matchedIndicators.includes(
+          topic.indicators.includes(
             observation.type
           )
       );
 
-    candidates.push({
-      id: topic.id,
+    if (rawEvidence.length === 0) {
+      return;
+    }
 
-      family: topic.family,
-      parent: topic.parent,
-      level: topic.level,
+    /*
+     * Dieselbe Fundstelle soll nicht
+     * versehentlich mehrfach zählen.
+     */
+    const uniqueEvidence = [];
+
+    const seenEvidence =
+      new Set();
+
+    rawEvidence.forEach(
+      observation => {
+        const key = [
+          observation.type,
+          observation.sentenceIndex,
+          observation.characterStart,
+          observation.characterEnd
+        ].join(":");
+
+        if (
+          seenEvidence.has(key)
+        ) {
+          return;
+        }
+
+        seenEvidence.add(key);
+
+        uniqueEvidence.push(
+          observation
+        );
+      }
+    );
+
+    /*
+     * Evidenz intern gewichten.
+     */
+    let evidenceScore = 0;
+
+    uniqueEvidence.forEach(
+      observation => {
+        const weight =
+          topic.indicatorWeights?.[
+            observation.type
+          ] ?? 1;
+
+        evidenceScore += weight;
+      }
+    );
+
+    /*
+     * Ein einzelner schwacher Hinweis
+     * muss nicht sofort zu einer
+     * Empfehlung führen.
+     */
+    const minimumEvidence =
+      topic.minimumEvidence ?? 1;
+
+    if (
+      evidenceScore <
+      minimumEvidence
+    ) {
+      return;
+    }
+
+    candidates.push({
+      id:
+        topic.id,
+
+      family:
+        topic.family,
+
+      parent:
+        topic.parent,
+
+      level:
+        topic.level,
 
       learningTopic:
         topic.learningTopic,
@@ -60,51 +133,85 @@ function runDiagnosis(analysis) {
       priority:
         topic.priority,
 
-      evidenceCount:
-        evidence.length,
+      /*
+       * Intern!
+       * Wird nicht an Studierende
+       * ausgegeben.
+       */
+      evidenceScore,
 
-      evidence
+      evidence:
+        uniqueEvidence
     });
   });
 
   /*
-   * Möglichst spezifische Themen zuerst.
+   * 1. Spezifischstes Lernthema
+   * 2. stärkste Evidenz
+   * 3. didaktische Priorität
    */
-  candidates.sort((a, b) => {
-    if (a.level !== b.level) {
-      return b.level - a.level;
-    }
+  candidates.sort(
+    (a, b) => {
+      if (
+        a.level !== b.level
+      ) {
+        return (
+          b.level -
+          a.level
+        );
+      }
 
-    if (a.priority !== b.priority) {
-      return b.priority - a.priority;
-    }
+      if (
+        a.evidenceScore !==
+        b.evidenceScore
+      ) {
+        return (
+          b.evidenceScore -
+          a.evidenceScore
+        );
+      }
 
-    return (
-      b.evidenceCount -
-      a.evidenceCount
-    );
-  });
+      return (
+        b.priority -
+        a.priority
+      );
+    }
+  );
 
   /*
    * Doppelte Themen entfernen.
    */
-  const unique = [];
+  const uniqueCandidates = [];
 
-  candidates.forEach(candidate => {
-    const exists =
-      unique.some(
-        item =>
-          item.id === candidate.id
+  const seenTopics =
+    new Set();
+
+  candidates.forEach(
+    candidate => {
+      if (
+        seenTopics.has(
+          candidate.id
+        )
+      ) {
+        return;
+      }
+
+      seenTopics.add(
+        candidate.id
       );
 
-    if (!exists) {
-      unique.push(candidate);
+      uniqueCandidates.push(
+        candidate
+      );
     }
-  });
+  );
 
   /*
-   * Höchstens drei konkrete
+   * Maximal drei konkrete
    * Wiederholungsthemen.
    */
-  return unique.slice(0, 3);
+  return uniqueCandidates.slice(
+    0,
+    3
+  );
 }
