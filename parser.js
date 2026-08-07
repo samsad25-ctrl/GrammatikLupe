@@ -118,6 +118,7 @@ const PARSER_VOCABULARY =
     ]
   });
 
+
 function tokenizeText(text) {
   const matches = [
     ...text.matchAll(
@@ -163,6 +164,7 @@ function tokenizeText(text) {
   );
 }
 
+
 function splitIntoSentences(text) {
   return text
     .split(
@@ -174,6 +176,7 @@ function splitIntoSentences(text) {
     )
     .filter(Boolean);
 }
+
 
 function createObservation(
   type,
@@ -212,18 +215,39 @@ function createObservation(
   };
 }
 
+
 function parseText(text) {
+  /*
+   * =========================================================
+   * 1. BASISANALYSE
+   * =========================================================
+   */
+
   const tokens =
     tokenizeText(text);
 
   const sentences =
     splitIntoSentences(text);
 
+  /*
+   * Neue Core-Schicht:
+   * Nominalgruppen werden unabhängig
+   * von den Diagnose-Observationen erzeugt.
+   */
+  const nominalGroups =
+    parseNominalGroups(
+      tokens
+    );
+
   const observations = [];
 
+
   /*
-   * Grundbeobachtungen
+   * =========================================================
+   * 2. GRUNDBEOBACHTUNGEN
+   * =========================================================
    */
+
   tokens.forEach(token => {
     if (
       /^[\p{L}\d]/u.test(
@@ -300,9 +324,13 @@ function parseText(text) {
     }
   });
 
+
   /*
-   * Präposition + Artikel
+   * =========================================================
+   * 3. PRÄPOSITION + ARTIKEL
+   * =========================================================
    */
+
   tokens.forEach(
     (token, index) => {
       const nextToken =
@@ -315,6 +343,9 @@ function parseText(text) {
         return;
       }
 
+      /*
+       * Keine Muster über Satzgrenzen.
+       */
       if (
         token.sentenceIndex !==
         nextToken.sentenceIndex
@@ -350,7 +381,7 @@ function parseText(text) {
 
       /*
        * Präposition + Artikel +
-       * wahrscheinlich grossgeschriebenes Nomen
+       * wahrscheinlich grossgeschriebenes Nomen.
        */
       if (
         tokenAfterNext &&
@@ -387,9 +418,13 @@ function parseText(text) {
     }
   );
 
+
   /*
-   * Regelmodule
+   * =========================================================
+   * 4. REGELMODULE
+   * =========================================================
    */
+
   const caseObservations =
     applyCaseRules(
       text,
@@ -399,6 +434,7 @@ function parseText(text) {
   observations.push(
     ...caseObservations
   );
+
 
   const twoWayObservations =
     applyTwoWayPrepositionRules(
@@ -410,20 +446,47 @@ function parseText(text) {
     ...twoWayObservations
   );
 
-const temporalObservations =
-  applyTemporalPrepositionRules(
-    text,
-    tokens
+
+  const temporalObservations =
+    applyTemporalPrepositionRules(
+      text,
+      tokens
+    );
+
+  observations.push(
+    ...temporalObservations
   );
 
-observations.push(
-  ...temporalObservations
-);
+
+  /*
+   * =========================================================
+   * 5. ANALYSIS-OBJEKT
+   * =========================================================
+   *
+   * Ab jetzt ist dies unsere zentrale Core API.
+   *
+   * Weitere Strukturen kommen später hinzu:
+   *
+   * verbGroups
+   * clauses
+   * ...
+   * =========================================================
+   */
 
   return {
     text,
 
     tokens,
+
+    nominalGroups,
+
+    /*
+     * Für die nächsten Core-Sprints
+     * bereits vorbereitet.
+     */
+    verbGroups: [],
+
+    clauses: [],
 
     observations,
 
@@ -438,6 +501,9 @@ observations.push(
 
       sentenceCount:
         sentences.length,
+
+      nominalGroupCount:
+        nominalGroups.length,
 
       observationCount:
         observations.length

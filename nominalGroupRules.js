@@ -1,0 +1,3 @@
+function parseNominalGroups(tokens) {
+  return [];
+}
