@@ -39,6 +39,15 @@ document.addEventListener(
         reviewTitle:
           "Das solltest du wiederholen",
 
+        observedTitle:
+          "Beobachtet im Text",
+
+        observedLabel:
+          "Beobachtet",
+
+        expectedLabel:
+          "Erwartete Form",
+
         wordSingular:
           "Wort",
 
@@ -82,6 +91,15 @@ document.addEventListener(
 
         reviewTitle:
           "建议复习",
+
+        observedTitle:
+          "文本中的观察",
+
+        observedLabel:
+          "观察到",
+
+        expectedLabel:
+          "建议形式",
 
         wordSingular:
           "个词",
@@ -199,7 +217,8 @@ document.addEventListener(
       items
     ) {
       if (
-        !Array.isArray(items)
+        !Array.isArray(items) ||
+        items.length === 0
       ) {
         return "";
       }
@@ -216,103 +235,228 @@ document.addEventListener(
       `;
     }
 
-function renderTopicCard(
-  result
-) {
-  const language =
-    translations[
-      currentLanguage
-    ];
+    function renderEvidence(
+      evidence
+    ) {
+      const language =
+        translations[
+          currentLanguage
+        ];
 
-  const examples =
-    (result.evidence || [])
-      .map(observation => {
-        if (
-          observation.details &&
-          observation.details.textFragment
-        ) {
-          return observation.details.textFragment;
+      if (
+        !Array.isArray(evidence) ||
+        evidence.length === 0
+      ) {
+        return "";
+      }
+
+      const uniqueEvidence =
+        [];
+
+      const seen =
+        new Set();
+
+      evidence.forEach(
+        observation => {
+          const details =
+            observation.details || {};
+
+          const observed =
+            details.textFragment ||
+            observation.token ||
+            "";
+
+          const expected =
+            details.expectedForm ||
+            "";
+
+          const explanation =
+            details.explanation &&
+            details.explanation[
+              currentLanguage
+            ]
+              ? details.explanation[
+                  currentLanguage
+                ]
+              : "";
+
+          const key = [
+            observed,
+            expected,
+            explanation
+          ].join("::");
+
+          if (
+            seen.has(key)
+          ) {
+            return;
+          }
+
+          seen.add(key);
+
+          uniqueEvidence.push({
+            observed,
+            expected,
+            explanation
+          });
         }
+      );
 
-        return observation.token;
-      })
-      .filter(Boolean);
+      const evidenceItems =
+        uniqueEvidence
+          .map(item => {
+            return `
+              <li class="evidence-item">
 
-  const uniqueExamples =
-    [...new Set(examples)];
+                <div class="observed-block">
 
-  const examplesHtml =
-    uniqueExamples.length > 0
-      ? `
+                  <span class="evidence-label">
+                    ${language.observedLabel}
+                  </span>
+
+                  <code class="observed-form">
+                    ${item.observed}
+                  </code>
+
+                </div>
+
+                ${
+                  item.expected
+                    ? `
+                      <div class="expected-block">
+
+                        <span class="expected-label">
+                          ${language.expectedLabel}
+                        </span>
+
+                        <code class="expected-form">
+                          ${item.expected}
+                        </code>
+
+                      </div>
+                    `
+                    : ""
+                }
+
+                ${
+                  item.explanation
+                    ? `
+                      <p class="evidence-explanation">
+                        ${item.explanation}
+                      </p>
+                    `
+                    : ""
+                }
+
+              </li>
+            `;
+          })
+          .join("");
+
+      if (!evidenceItems) {
+        return "";
+      }
+
+      return `
         <div class="evidence">
 
           <strong>
-            ${
-              currentLanguage === "de"
-                ? "Beobachtet im Text"
-                : "文本中的例子"
-            }
+            ${language.observedTitle}
           </strong>
 
-          <ul>
-            ${uniqueExamples
-              .map(
-                example =>
-                  `<li><code>${example}</code></li>`
-              )
-              .join("")}
+          <ul class="evidence-list">
+            ${evidenceItems}
           </ul>
 
         </div>
-      `
-      : "";
+      `;
+    }
 
-  return `
-    <article class="diagnosis-card">
+    function renderTopicCard(
+      result
+    ) {
+      const language =
+        translations[
+          currentLanguage
+        ];
 
-      <h3>
-        ${
-          result.learningTopic[
-            currentLanguage
-          ]
-        }
-      </h3>
-
-      ${examplesHtml}
-
-      <div class="topic-reason">
-
-        <strong>
-          ${language.whyTitle}
-        </strong>
-
-        <p>
-          ${
-            result.why[
+      const topic =
+        result.learningTopic &&
+        result.learningTopic[
+          currentLanguage
+        ]
+          ? result.learningTopic[
               currentLanguage
             ]
+          : result.id;
+
+      const why =
+        result.why &&
+        result.why[
+          currentLanguage
+        ]
+          ? result.why[
+              currentLanguage
+            ]
+          : "";
+
+      const review =
+        result.review &&
+        result.review[
+          currentLanguage
+        ]
+          ? result.review[
+              currentLanguage
+            ]
+          : [];
+
+      const evidenceHtml =
+        renderEvidence(
+          result.evidence
+        );
+
+      return `
+        <article class="diagnosis-card">
+
+          <h3>
+            ${topic}
+          </h3>
+
+          ${evidenceHtml}
+
+          ${
+            why
+              ? `
+                <div class="topic-reason">
+
+                  <strong>
+                    ${language.whyTitle}
+                  </strong>
+
+                  <p>
+                    ${why}
+                  </p>
+
+                </div>
+              `
+              : ""
           }
-        </p>
 
-      </div>
+          <div class="recommendation">
 
-      <div class="recommendation">
+            <strong>
+              ${language.reviewTitle}
+            </strong>
 
-        <strong>
-          ${language.reviewTitle}
-        </strong>
+            ${renderReviewList(
+              review
+            )}
 
-        ${renderReviewList(
-          result.review[
-            currentLanguage
-          ]
-        )}
+          </div>
 
-      </div>
-
-    </article>
-  `;
-}
+        </article>
+      `;
+    }
 
     function renderResults() {
       const language =
@@ -437,9 +581,6 @@ function renderTopicCard(
                 lastAnalysis
               );
 
-            /*
-             * Debug bleibt vorerst aktiv.
-             */
             console.log(
               "ANALYSIS:",
               lastAnalysis

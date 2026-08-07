@@ -207,3 +207,61 @@ button.analyse:hover{
     border-radius:10px;
 
 }
+.evidence-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 12px;
+}
+
+.evidence-item {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: #fafcff;
+  border: 1px solid #e5ecf7;
+  border-radius: 12px;
+}
+
+.observed-block,
+.expected-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.expected-block {
+  margin-top: 12px;
+}
+
+.evidence-label,
+.expected-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #667085;
+}
+
+.observed-form {
+  display: inline-block;
+  width: fit-content;
+  background: #fff5df;
+  color: #9a6700;
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.expected-form {
+  display: inline-block;
+  width: fit-content;
+  background: #edf9f1;
+  color: #157347;
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.evidence-explanation {
+  margin-top: 12px;
+  margin-bottom: 0;
+  color: #475467;
+  font-size: 0.95rem;
+}
