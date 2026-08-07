@@ -144,3 +144,66 @@ button.analyse:hover{
     box-shadow:0 5px 15px rgba(0,0,0,.1);
 
 }
+.diagnosis-card{
+
+    margin-bottom:40px;
+
+    padding:24px;
+
+    border-radius:18px;
+
+    background:white;
+
+    box-shadow:0 8px 20px rgba(0,0,0,.06);
+
+}
+
+.diagnosis-card code{
+
+    background:#eef4ff;
+
+    color:#1248a6;
+
+    padding:2px 8px;
+
+    border-radius:8px;
+
+    font-size:.95rem;
+
+}
+
+.diagnosis-card ul{
+
+    margin-top:8px;
+
+    margin-bottom:18px;
+
+}
+
+.evidence{
+
+    margin-top:18px;
+
+    margin-bottom:18px;
+
+}
+
+.why{
+
+    margin-top:18px;
+
+}
+
+.recommendation{
+
+    margin-top:20px;
+
+    padding:16px;
+
+    background:#f6f9ff;
+
+    border-left:5px solid #1565c0;
+
+    border-radius:10px;
+
+}

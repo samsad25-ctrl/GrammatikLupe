@@ -216,59 +216,103 @@ document.addEventListener(
       `;
     }
 
-    function renderTopicCard(
-      result
-    ) {
-      const language =
-        translations[
-          currentLanguage
-        ];
+function renderTopicCard(
+  result
+) {
+  const language =
+    translations[
+      currentLanguage
+    ];
 
-      return `
-        <article class="diagnosis-card">
+  const examples =
+    (result.evidence || [])
+      .map(observation => {
+        if (
+          observation.details &&
+          observation.details.textFragment
+        ) {
+          return observation.details.textFragment;
+        }
 
-          <h3>
+        return observation.token;
+      })
+      .filter(Boolean);
+
+  const uniqueExamples =
+    [...new Set(examples)];
+
+  const examplesHtml =
+    uniqueExamples.length > 0
+      ? `
+        <div class="evidence">
+
+          <strong>
             ${
-              result
-                .learningTopic[
-                  currentLanguage
-                ]
+              currentLanguage === "de"
+                ? "Beobachtet im Text"
+                : "文本中的例子"
             }
-          </h3>
+          </strong>
 
-          <div class="topic-reason">
+          <ul>
+            ${uniqueExamples
+              .map(
+                example =>
+                  `<li><code>${example}</code></li>`
+              )
+              .join("")}
+          </ul>
 
-            <strong>
-              ${language.whyTitle}
-            </strong>
+        </div>
+      `
+      : "";
 
-            <p>
-              ${
-                result.why[
-                  currentLanguage
-                ]
-              }
-            </p>
+  return `
+    <article class="diagnosis-card">
 
-          </div>
+      <h3>
+        ${
+          result.learningTopic[
+            currentLanguage
+          ]
+        }
+      </h3>
 
-          <div class="recommendation">
+      ${examplesHtml}
 
-            <strong>
-              ${language.reviewTitle}
-            </strong>
+      <div class="topic-reason">
 
-            ${renderReviewList(
-              result.review[
-                currentLanguage
-              ]
-            )}
+        <strong>
+          ${language.whyTitle}
+        </strong>
 
-          </div>
+        <p>
+          ${
+            result.why[
+              currentLanguage
+            ]
+          }
+        </p>
 
-        </article>
-      `;
-    }
+      </div>
+
+      <div class="recommendation">
+
+        <strong>
+          ${language.reviewTitle}
+        </strong>
+
+        ${renderReviewList(
+          result.review[
+            currentLanguage
+          ]
+        )}
+
+      </div>
+
+    </article>
+  `;
+}
 
     function renderResults() {
       const language =
