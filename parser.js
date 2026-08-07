@@ -1,237 +1,436 @@
-const PARSER_VOCABULARY = Object.freeze({
-  articles: [
-    "der", "die", "das", "den", "dem", "des",
-    "ein", "eine", "einen", "einem", "einer", "eines",
-    "kein", "keine", "keinen", "keinem", "keiner", "keines"
-  ],
+const PARSER_VOCABULARY =
+  Object.freeze({
+    articles: [
+      "der",
+      "die",
+      "das",
+      "den",
+      "dem",
+      "des",
 
-  pronouns: [
-    "ich", "du", "er", "sie", "es", "wir", "ihr",
-    "mich", "dich", "ihn", "uns", "euch",
-    "mir", "dir", "ihm", "ihnen"
-  ],
+      "ein",
+      "eine",
+      "einen",
+      "einem",
+      "einer",
+      "eines",
 
-  prepositions: [
-    "an", "auf", "aus", "bei", "durch", "für",
-    "gegen", "hinter", "in", "mit", "nach", "neben",
-    "ohne", "über", "um", "unter", "von", "vor",
-    "zu", "zwischen", "seit", "während", "wegen"
-  ],
+      "kein",
+      "keine",
+      "keinen",
+      "keinem",
+      "keiner",
+      "keines",
 
-  conjunctions: [
-    "aber", "denn", "oder", "sondern", "und",
-    "deshalb", "darum", "trotzdem", "danach"
-  ],
+      "mein",
+      "meine",
+      "meinen",
+      "meinem",
+      "meiner",
+      "meines",
 
-  subordinatingConjunctions: [
-    "als", "bevor", "bis", "da", "damit", "dass",
-    "falls", "nachdem", "ob", "obwohl", "seitdem",
-    "sobald", "solange", "während", "weil", "wenn"
-  ]
-});
+      "dein",
+      "deine",
+      "deinen",
+      "deinem",
+      "deiner",
+      "deines",
+
+      "sein",
+      "seine",
+      "seinen",
+      "seinem",
+      "seiner",
+      "seines",
+
+      "ihr",
+      "ihre",
+      "ihren",
+      "ihrem",
+      "ihrer",
+      "ihres",
+
+      "unser",
+      "unsere",
+      "unseren",
+      "unserem",
+      "unserer",
+      "unseres",
+
+      "euer",
+      "eure",
+      "euren",
+      "eurem",
+      "eurer",
+      "eures"
+    ],
+
+    prepositions: [
+      "an",
+      "auf",
+      "aus",
+      "bei",
+      "durch",
+      "für",
+      "gegen",
+      "gegenüber",
+      "hinter",
+      "in",
+      "mit",
+      "nach",
+      "neben",
+      "ohne",
+      "seit",
+      "über",
+      "um",
+      "unter",
+      "von",
+      "vor",
+      "zu",
+      "zwischen"
+    ],
+
+    conjunctions: [
+      "aber",
+      "denn",
+      "oder",
+      "sondern",
+      "und"
+    ],
+
+    subordinatingConjunctions: [
+      "als",
+      "bevor",
+      "bis",
+      "da",
+      "damit",
+      "dass",
+      "falls",
+      "nachdem",
+      "ob",
+      "obwohl",
+      "seitdem",
+      "sobald",
+      "solange",
+      "während",
+      "weil",
+      "wenn"
+    ]
+  });
 
 function tokenizeText(text) {
   const matches = [
-    ...text.matchAll(/\p{L}+(?:['’-]\p{L}+)*|\d+|[.,!?;:]/gu)
+    ...text.matchAll(
+      /\p{L}+(?:['’-]\p{L}+)*|\d+|[.,!?;:]/gu
+    )
   ];
 
-  return matches.map((match, index) => ({
-    value: match[0],
-    lower: match[0].toLowerCase(),
-    index,
-    characterStart: match.index,
-    characterEnd: match.index + match[0].length
-  }));
+  let sentenceIndex = 0;
+
+  return matches.map(
+    (match, index) => {
+      const value =
+        match[0];
+
+      const token = {
+        value,
+
+        lower:
+          value.toLowerCase(),
+
+        index,
+
+        sentenceIndex,
+
+        characterStart:
+          match.index,
+
+        characterEnd:
+          match.index +
+          value.length
+      };
+
+      if (
+        value === "." ||
+        value === "!" ||
+        value === "?"
+      ) {
+        sentenceIndex++;
+      }
+
+      return token;
+    }
+  );
 }
 
 function splitIntoSentences(text) {
   return text
-    .split(/(?<=[.!?])\s+/)
-    .map(sentence => sentence.trim())
+    .split(
+      /(?<=[.!?])\s+/u
+    )
+    .map(
+      sentence =>
+        sentence.trim()
+    )
     .filter(Boolean);
 }
 
-function createObservation(type, token, sentenceIndex, details = {}) {
+function createObservation(
+  type,
+  token,
+  details = {}
+) {
   return {
     type,
-    token: token?.value ?? null,
-    tokenIndex: token?.index ?? null,
-    characterStart: token?.characterStart ?? null,
-    characterEnd: token?.characterEnd ?? null,
-    sentenceIndex,
+
+    token:
+      token
+        ? token.value
+        : null,
+
+    tokenIndex:
+      token
+        ? token.index
+        : null,
+
+    sentenceIndex:
+      token
+        ? token.sentenceIndex
+        : null,
+
+    characterStart:
+      token
+        ? token.characterStart
+        : null,
+
+    characterEnd:
+      token
+        ? token.characterEnd
+        : null,
+
     details
   };
 }
 
-function findSentenceIndex(text, characterPosition) {
-  const precedingText = text.slice(0, characterPosition);
-
-  return (
-    precedingText.match(/[.!?]+(?:\s+|$)/g)?.length ?? 0
-  );
-}
-
 function parseText(text) {
-  const tokens = tokenizeText(text);
-  const sentences = splitIntoSentences(text);
+  const tokens =
+    tokenizeText(text);
+
+  const sentences =
+    splitIntoSentences(text);
+
   const observations = [];
 
+  /*
+   * Grundbeobachtungen
+   */
   tokens.forEach(token => {
-    const sentenceIndex = findSentenceIndex(
-      text,
-      token.characterStart
-    );
-
-    observations.push(
-      createObservation(
-        OBS.WORD_FOUND,
-        token,
-        sentenceIndex
+    if (
+      /^[\p{L}\d]/u.test(
+        token.value
       )
-    );
-
-    if (PARSER_VOCABULARY.articles.includes(token.lower)) {
+    ) {
       observations.push(
         createObservation(
-          OBS.ARTICLE_FOUND,
-          token,
-          sentenceIndex
-        )
-      );
-    }
-
-    if (PARSER_VOCABULARY.pronouns.includes(token.lower)) {
-      observations.push(
-        createObservation(
-          OBS.PRONOUN_FOUND,
-          token,
-          sentenceIndex
-        )
-      );
-    }
-
-    if (PARSER_VOCABULARY.prepositions.includes(token.lower)) {
-      observations.push(
-        createObservation(
-          OBS.PREPOSITION_FOUND,
-          token,
-          sentenceIndex
-        )
-      );
-    }
-
-    if (PARSER_VOCABULARY.conjunctions.includes(token.lower)) {
-      observations.push(
-        createObservation(
-          OBS.CONJUNCTION_FOUND,
-          token,
-          sentenceIndex
+          OBS.WORD_FOUND,
+          token
         )
       );
     }
 
     if (
-      PARSER_VOCABULARY.subordinatingConjunctions.includes(
+      PARSER_VOCABULARY.articles.includes(
         token.lower
       )
     ) {
       observations.push(
         createObservation(
+          OBS.ARTICLE_FOUND,
+          token
+        )
+      );
+    }
+
+    if (
+      PARSER_VOCABULARY.prepositions.includes(
+        token.lower
+      )
+    ) {
+      observations.push(
+        createObservation(
+          OBS.PREPOSITION_FOUND,
+          token
+        )
+      );
+    }
+
+    if (
+      PARSER_VOCABULARY.conjunctions.includes(
+        token.lower
+      )
+    ) {
+      observations.push(
+        createObservation(
+          OBS.CONJUNCTION_FOUND,
+          token
+        )
+      );
+    }
+
+    if (
+      PARSER_VOCABULARY
+        .subordinatingConjunctions
+        .includes(
+          token.lower
+        )
+    ) {
+      observations.push(
+        createObservation(
           OBS.SUBORDINATING_CONJUNCTION_FOUND,
-          token,
-          sentenceIndex
+          token
         )
       );
 
       observations.push(
         createObservation(
           OBS.SUBORDINATE_CLAUSE_FOUND,
-          token,
-          sentenceIndex
+          token
         )
       );
     }
   });
 
-  tokens.forEach((token, index) => {
-    const nextToken = tokens[index + 1];
-    const tokenAfterNext = tokens[index + 2];
+  /*
+   * Präposition + Artikel
+   */
+  tokens.forEach(
+    (token, index) => {
+      const nextToken =
+        tokens[index + 1];
 
-    if (
-      PARSER_VOCABULARY.prepositions.includes(token.lower) &&
-      nextToken &&
-      PARSER_VOCABULARY.articles.includes(nextToken.lower)
-    ) {
-      observations.push(
-        createObservation(
-          OBS.PREPOSITION_ARTICLE_PATTERN,
-          token,
-          findSentenceIndex(text, token.characterStart),
-          {
-            values: [token.value, nextToken.value],
-            startTokenIndex: token.index,
-            endTokenIndex: nextToken.index
-          }
+      const tokenAfterNext =
+        tokens[index + 2];
+
+      if (!nextToken) {
+        return;
+      }
+
+      if (
+        token.sentenceIndex !==
+        nextToken.sentenceIndex
+      ) {
+        return;
+      }
+
+      if (
+        PARSER_VOCABULARY
+          .prepositions
+          .includes(
+            token.lower
+          ) &&
+        PARSER_VOCABULARY
+          .articles
+          .includes(
+            nextToken.lower
+          )
+      ) {
+        observations.push(
+          createObservation(
+            OBS.PREPOSITION_ARTICLE_PATTERN,
+            token,
+            {
+              values: [
+                token.value,
+                nextToken.value
+              ]
+            }
+          )
+        );
+      }
+
+      /*
+       * Präposition + Artikel +
+       * wahrscheinlich grossgeschriebenes Nomen
+       */
+      if (
+        tokenAfterNext &&
+        token.sentenceIndex ===
+          tokenAfterNext.sentenceIndex &&
+        PARSER_VOCABULARY
+          .prepositions
+          .includes(
+            token.lower
+          ) &&
+        PARSER_VOCABULARY
+          .articles
+          .includes(
+            nextToken.lower
+          ) &&
+        /^[A-ZÄÖÜ]/u.test(
+          tokenAfterNext.value
         )
-      );
+      ) {
+        observations.push(
+          createObservation(
+            OBS.PREPOSITION_ARTICLE_NOUN_PATTERN,
+            token,
+            {
+              values: [
+                token.value,
+                nextToken.value,
+                tokenAfterNext.value
+              ]
+            }
+          )
+        );
+      }
     }
-
-    if (
-      PARSER_VOCABULARY.prepositions.includes(token.lower) &&
-      nextToken &&
-      PARSER_VOCABULARY.articles.includes(nextToken.lower) &&
-      tokenAfterNext &&
-      /^[A-ZÄÖÜ]/u.test(tokenAfterNext.value)
-    ) {
-      observations.push(
-        createObservation(
-          OBS.PREPOSITION_ARTICLE_NOUN_PATTERN,
-          token,
-          findSentenceIndex(text, token.characterStart),
-          {
-            values: [
-              token.value,
-              nextToken.value,
-              tokenAfterNext.value
-            ],
-            startTokenIndex: token.index,
-            endTokenIndex: tokenAfterNext.index
-          }
-        )
-      );
-    }
-  });
-
-const caseObservations = applyCaseRules(
-  text,
-  tokens
-);
-
-observations.push(...caseObservations);
-
-const twoWayObservations =
-  applyTwoWayPrepositionRules(
-    text,
-    tokens
   );
 
-observations.push(
-  ...twoWayObservations
-);
+  /*
+   * Regelmodule
+   */
+  const caseObservations =
+    applyCaseRules(
+      text,
+      tokens
+    );
+
+  observations.push(
+    ...caseObservations
+  );
+
+  const twoWayObservations =
+    applyTwoWayPrepositionRules(
+      text,
+      tokens
+    );
+
+  observations.push(
+    ...twoWayObservations
+  );
 
   return {
     text,
+
     tokens,
+
     observations,
 
     statistics: {
-      wordCount: tokens.filter(token =>
-        /^[\p{L}\d]/u.test(token.value)
-      ).length,
+      wordCount:
+        tokens.filter(
+          token =>
+            /^[\p{L}\d]/u.test(
+              token.value
+            )
+        ).length,
 
-      sentenceCount: sentences.length,
+      sentenceCount:
+        sentences.length,
 
-      observationCount: observations.length
+      observationCount:
+        observations.length
     },
 
     structures: {

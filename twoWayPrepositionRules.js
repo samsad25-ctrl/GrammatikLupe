@@ -12,8 +12,8 @@ const TWO_WAY_RULES = Object.freeze({
   ],
 
   /*
-   * Vorerst bewusst kleine Listen.
-   * Wir erweitern sie später systematisch.
+   * Signale für Bewegung
+   * mit Ziel/Richtungsänderung.
    */
   directionSignals: [
     "gehe",
@@ -50,14 +50,27 @@ const TWO_WAY_RULES = Object.freeze({
     "setzen"
   ],
 
+  /*
+   * Signale für Position/Aufenthalt.
+   */
   locationSignals: [
     "bin",
     "bist",
     "ist",
     "sind",
     "seid",
+
     "war",
     "waren",
+
+    "bleibe",
+    "bleibst",
+    "bleibt",
+    "bleiben",
+
+    "sitze",
+    "sitzt",
+    "sitzen",
 
     "stehe",
     "stehst",
@@ -69,26 +82,12 @@ const TWO_WAY_RULES = Object.freeze({
     "liegt",
     "liegen",
 
-    "sitze",
-    "sitzt",
-    "sitzen",
-
-    "bleibe",
-    "bleibst",
-    "bleibt",
-    "bleiben",
-
     "wohne",
     "wohnst",
     "wohnt",
     "wohnen"
   ],
 
-  /*
-   * Formen, die bei einem
-   * Richtungshinweis klar
-   * nicht nach Akkusativ aussehen.
-   */
   clearlyNonAccusative: [
     "der",
     "dem",
@@ -127,11 +126,6 @@ const TWO_WAY_RULES = Object.freeze({
     "eures"
   ],
 
-  /*
-   * Formen, die bei einem
-   * Ortshinweis klar
-   * nicht nach Dativ aussehen.
-   */
   clearlyNonDative: [
     "die",
     "das",
@@ -170,16 +164,14 @@ const TWO_WAY_RULES = Object.freeze({
   ]
 });
 
-function getSentenceTokens(
+function getTokensOfSentence(
   tokens,
-  sentenceIndex,
-  text
+  sentenceIndex
 ) {
-  return tokens.filter(token =>
-    findSentenceIndex(
-      text,
-      token.characterStart
-    ) === sentenceIndex
+  return tokens.filter(
+    token =>
+      token.sentenceIndex ===
+      sentenceIndex
   );
 }
 
@@ -187,8 +179,7 @@ function createTwoWayObservation(
   type,
   prepositionToken,
   determinerToken,
-  sentenceIndex,
-  contextType
+  context
 ) {
   return {
     type,
@@ -199,6 +190,9 @@ function createTwoWayObservation(
     tokenIndex:
       prepositionToken.index,
 
+    sentenceIndex:
+      prepositionToken.sentenceIndex,
+
     characterStart:
       prepositionToken.characterStart,
 
@@ -206,8 +200,6 @@ function createTwoWayObservation(
       determinerToken
         ? determinerToken.characterEnd
         : prepositionToken.characterEnd,
-
-    sentenceIndex,
 
     details: {
       preposition:
@@ -218,7 +210,7 @@ function createTwoWayObservation(
           ? determinerToken.value
           : null,
 
-      contextType,
+      context,
 
       textFragment:
         determinerToken
@@ -246,17 +238,21 @@ function applyTwoWayPrepositionRules(
     const nextToken =
       tokens[index + 1];
 
-    const sentenceIndex =
-      findSentenceIndex(
-        text,
-        token.characterStart
-      );
+    /*
+     * Der nächste Token muss
+     * noch im selben Satz liegen.
+     */
+    const determinerToken =
+      nextToken &&
+      nextToken.sentenceIndex ===
+        token.sentenceIndex
+        ? nextToken
+        : null;
 
     const sentenceTokens =
-      getSentenceTokens(
+      getTokensOfSentence(
         tokens,
-        sentenceIndex,
-        text
+        token.sentenceIndex
       );
 
     const sentenceWords =
@@ -265,62 +261,57 @@ function applyTwoWayPrepositionRules(
           sentenceToken.lower
       );
 
-    const hasDirectionSignal =
+    const hasDirection =
       sentenceWords.some(word =>
         TWO_WAY_RULES.directionSignals.includes(
           word
         )
       );
 
-    const hasLocationSignal =
+    const hasLocation =
       sentenceWords.some(word =>
         TWO_WAY_RULES.locationSignals.includes(
           word
         )
       );
 
-    /*
-     * Wechselpräposition erkannt.
-     */
     observations.push(
       createTwoWayObservation(
         OBS.TWO_WAY_PREPOSITION_FOUND,
         token,
-        nextToken,
-        sentenceIndex,
+        determinerToken,
         "unknown"
       )
     );
 
     /*
-     * Richtung
+     * Nur Richtung:
+     * Akkusativ erwartet.
      */
     if (
-      hasDirectionSignal &&
-      !hasLocationSignal
+      hasDirection &&
+      !hasLocation
     ) {
       observations.push(
         createTwoWayObservation(
           OBS.TWO_WAY_PREPOSITION_DIRECTION,
           token,
-          nextToken,
-          sentenceIndex,
+          determinerToken,
           "direction"
         )
       );
 
       if (
-        nextToken &&
+        determinerToken &&
         TWO_WAY_RULES.clearlyNonAccusative.includes(
-          nextToken.lower
+          determinerToken.lower
         )
       ) {
         observations.push(
           createTwoWayObservation(
             OBS.TWO_WAY_DIRECTION_UNCERTAIN,
             token,
-            nextToken,
-            sentenceIndex,
+            determinerToken,
             "direction"
           )
         );
@@ -330,39 +321,47 @@ function applyTwoWayPrepositionRules(
     }
 
     /*
-     * Ort
+     * Nur Ort:
+     * Dativ erwartet.
      */
     if (
-      hasLocationSignal &&
-      !hasDirectionSignal
+      hasLocation &&
+      !hasDirection
     ) {
       observations.push(
         createTwoWayObservation(
           OBS.TWO_WAY_PREPOSITION_LOCATION,
           token,
-          nextToken,
-          sentenceIndex,
+          determinerToken,
           "location"
         )
       );
 
       if (
-        nextToken &&
+        determinerToken &&
         TWO_WAY_RULES.clearlyNonDative.includes(
-          nextToken.lower
+          determinerToken.lower
         )
       ) {
         observations.push(
           createTwoWayObservation(
             OBS.TWO_WAY_LOCATION_UNCERTAIN,
             token,
-            nextToken,
-            sentenceIndex,
+            determinerToken,
             "location"
           )
         );
       }
     }
+
+    /*
+     * Wenn beide Signaltypen
+     * im Satz vorkommen oder keiner:
+     * keine Bewertung.
+     *
+     * Lieber keine Diagnose
+     * als ein Fehlalarm.
+     */
   });
 
   return observations;

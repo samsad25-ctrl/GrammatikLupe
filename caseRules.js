@@ -18,63 +18,44 @@ const CASE_RULES = Object.freeze({
     "um"
   ],
 
-  twoWayPrepositions: [
-    "an",
-    "auf",
-    "hinter",
-    "in",
-    "neben",
-    "über",
-    "unter",
-    "vor",
-    "zwischen"
-  ],
-
-  clearlyNonDativeDeterminers: [
+  clearlyNonDative: [
     "die",
     "das",
+
     "ein",
     "eine",
     "einen",
-    "eines",
 
     "kein",
     "keine",
     "keinen",
-    "keines",
 
     "mein",
     "meine",
     "meinen",
-    "meines",
 
     "dein",
     "deine",
     "deinen",
-    "deines",
 
     "sein",
     "seine",
     "seinen",
-    "seines",
 
     "ihr",
     "ihre",
     "ihren",
-    "ihres",
 
     "unser",
     "unsere",
     "unseren",
-    "unseres",
 
     "euer",
     "eure",
-    "euren",
-    "eures"
+    "euren"
   ],
 
-  clearlyNonAccusativeDeterminers: [
+  clearlyNonAccusative: [
     "der",
     "dem",
     "des",
@@ -113,26 +94,29 @@ const CASE_RULES = Object.freeze({
   ]
 });
 
-function createCaseObservation(
+function createFixedCaseObservation(
   type,
   prepositionToken,
   determinerToken,
-  requiredCase,
-  sentenceIndex
+  requiredCase
 ) {
   return {
     type,
 
-    token: prepositionToken.value,
-    tokenIndex: prepositionToken.index,
+    token:
+      prepositionToken.value,
+
+    tokenIndex:
+      prepositionToken.index,
+
+    sentenceIndex:
+      prepositionToken.sentenceIndex,
 
     characterStart:
       prepositionToken.characterStart,
 
     characterEnd:
       determinerToken.characterEnd,
-
-    sentenceIndex,
 
     details: {
       preposition:
@@ -149,118 +133,76 @@ function createCaseObservation(
   };
 }
 
-function applyCaseRules(text, tokens) {
+function applyCaseRules(
+  text,
+  tokens
+) {
   const observations = [];
 
   tokens.forEach((token, index) => {
-    const nextToken = tokens[index + 1];
+    const nextToken =
+      tokens[index + 1];
 
     if (!nextToken) {
       return;
     }
 
-    const preposition = token.lower;
-    const determiner = nextToken.lower;
+    /*
+     * Keine Regel über Satzgrenzen.
+     */
+    if (
+      token.sentenceIndex !==
+      nextToken.sentenceIndex
+    ) {
+      return;
+    }
 
-    const sentenceIndex =
-      findSentenceIndex(
-        text,
-        token.characterStart
-      );
+    const preposition =
+      token.lower;
 
-    // Präposition verlangt Dativ
+    const determiner =
+      nextToken.lower;
+
+    /*
+     * Fester Dativ
+     */
     if (
       CASE_RULES.dativePrepositions.includes(
         preposition
       ) &&
-      CASE_RULES.clearlyNonDativeDeterminers.includes(
+      CASE_RULES.clearlyNonDative.includes(
         determiner
       )
     ) {
       observations.push(
-        createCaseObservation(
+        createFixedCaseObservation(
           OBS.FIXED_DATIVE_PREPOSITION_UNCERTAIN,
           token,
           nextToken,
-          "Dativ",
-          sentenceIndex
-        )
-      );
-
-      observations.push(
-        createCaseObservation(
-          OBS.PREPOSITION_CASE_UNCERTAIN,
-          token,
-          nextToken,
-          "Dativ",
-          sentenceIndex
+          "Dativ"
         )
       );
     }
 
-    // Präposition verlangt Akkusativ
+    /*
+     * Fester Akkusativ
+     */
     if (
       CASE_RULES.accusativePrepositions.includes(
         preposition
       ) &&
-      CASE_RULES.clearlyNonAccusativeDeterminers.includes(
+      CASE_RULES.clearlyNonAccusative.includes(
         determiner
       )
     ) {
       observations.push(
-        createCaseObservation(
+        createFixedCaseObservation(
           OBS.FIXED_ACCUSATIVE_PREPOSITION_UNCERTAIN,
           token,
           nextToken,
-          "Akkusativ",
-          sentenceIndex
+          "Akkusativ"
         )
       );
-
-      observations.push(
-        createCaseObservation(
-          OBS.PREPOSITION_CASE_UNCERTAIN,
-          token,
-          nextToken,
-          "Akkusativ",
-          sentenceIndex
-        )
-      );
-    }
-
-    // Wechselpräposition zunächst nur erkennen.
-    // Noch keine Bewertung von Dativ/Akkusativ.
-    if (
-      CASE_RULES.twoWayPrepositions.includes(
-        preposition
-      )
-    ) {
-      observations.push({
-        type:
-          OBS.TWO_WAY_PREPOSITION_FOUND,
-
-        token:
-          token.value,
-
-        tokenIndex:
-          token.index,
-
-        characterStart:
-          token.characterStart,
-
-        characterEnd:
-          token.characterEnd,
-
-        sentenceIndex,
-
-        details: {
-          preposition:
-            token.value,
-
-          determiner:
-            nextToken.value
-        }
-      });
     }
   });
 
