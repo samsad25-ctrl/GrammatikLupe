@@ -12,24 +12,32 @@ function runDiagnosis(analysis) {
     )
   );
 
-  const results = [];
+  const candidates = [];
 
-  DIAGNOSIS_MODEL.forEach(card => {
-    const isObservable =
-      card.observableThrough.some(type =>
-        observationTypes.has(type)
+  LEARNING_TOPICS.forEach(topic => {
+    const observable =
+      topic.observableThrough.some(
+        observationType =>
+          observationTypes.has(
+            observationType
+          )
       );
 
-    if (!isObservable) {
+    if (!observable) {
       return;
     }
 
     const matchedIndicators =
-      card.indicators.filter(indicator =>
-        observationTypes.has(indicator)
+      topic.indicators.filter(
+        indicator =>
+          observationTypes.has(
+            indicator
+          )
       );
 
-    if (matchedIndicators.length === 0) {
+    if (
+      matchedIndicators.length === 0
+    ) {
       return;
     }
 
@@ -41,45 +49,115 @@ function runDiagnosis(analysis) {
           )
       );
 
-    results.push({
-      id: card.id,
-
-      parent: card.parent,
+    candidates.push({
+      id: topic.id,
+      parent: topic.parent,
+      family: topic.family,
+      level: topic.level,
 
       learningTopic:
-        card.learningTopic,
+        topic.learningTopic,
 
       why:
-        card.why,
+        topic.why,
 
       review:
-        card.review,
+        topic.review,
 
       priority:
-        card.priority,
+        topic.priority,
+
+      evidenceCount:
+        evidence.length,
 
       evidence
     });
   });
 
-  results.sort(
-    (a, b) =>
-      b.priority - a.priority
+  /*
+   * Zuerst:
+   * möglichst konkretes Lernthema.
+   *
+   * Danach:
+   * Priorität.
+   *
+   * Danach:
+   * stärkere Evidenz.
+   */
+  candidates.sort(
+    (a, b) => {
+      if (a.level !== b.level) {
+        return b.level - a.level;
+      }
+
+      if (
+        a.priority !== b.priority
+      ) {
+        return (
+          b.priority -
+          a.priority
+        );
+      }
+
+      return (
+        b.evidenceCount -
+        a.evidenceCount
+      );
+    }
   );
 
-  const uniqueResults = [];
+  /*
+   * Pro Ast soll möglichst
+   * der spezifischste Knoten
+   * erscheinen.
+   */
+  const selected = [];
+  const selectedFamilies =
+    new Map();
 
-  results.forEach(result => {
-    const alreadyIncluded =
-      uniqueResults.some(
-        existing =>
-          existing.id === result.id
-      );
+  candidates.forEach(
+    candidate => {
+      const existing =
+        selectedFamilies.get(
+          candidate.family
+        );
 
-    if (!alreadyIncluded) {
-      uniqueResults.push(result);
+      if (!existing) {
+        selected.push(
+          candidate
+        );
+
+        selectedFamilies.set(
+          candidate.family,
+          candidate
+        );
+
+        return;
+      }
+
+      /*
+       * Gleich konkrete Themen
+       * dürfen nebeneinander
+       * vorkommen.
+       *
+       * Beispiel:
+       * Dativpräpositionen +
+       * Akkusativpräpositionen.
+       */
+      if (
+        existing.level ===
+        candidate.level
+      ) {
+        selected.push(
+          candidate
+        );
+      }
     }
-  });
+  );
 
-  return uniqueResults.slice(0, 3);
+  /*
+   * Nie mehr als drei
+   * Wiederholungsthemen.
+   */
+  return selected.slice(0, 3);
 }
