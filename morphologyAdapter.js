@@ -1,46 +1,123 @@
-const TEST_MORPHOLOGY = {
+const NOUN_LEXICON = Object.freeze({
 
-  "Schwester": {
+  schwester: {
     lemma: "Schwester",
     pos: "NOUN",
-    gender: "fem",
-    number: "singular",
+    gender: "feminine",
+    singular: "Schwester",
     plural: "Schwestern"
   },
 
-  "Stadt": {
-    lemma: "Stadt",
+  bruder: {
+    lemma: "Bruder",
     pos: "NOUN",
-    gender: "fem",
-    number: "singular",
-    plural: "Städte"
+    gender: "masculine",
+    singular: "Bruder",
+    plural: "Brüder"
   },
 
-  "Freund": {
+  buch: {
+    lemma: "Buch",
+    pos: "NOUN",
+    gender: "neuter",
+    singular: "Buch",
+    plural: "Bücher"
+  },
+
+  freund: {
     lemma: "Freund",
     pos: "NOUN",
-    gender: "mask",
-    number: "singular",
+    gender: "masculine",
+    singular: "Freund",
     plural: "Freunde"
   },
 
-  "Buch": {
-    lemma: "Buch",
+  freundin: {
+    lemma: "Freundin",
     pos: "NOUN",
-    gender: "neut",
-    number: "singular",
-    plural: "Bücher"
+    gender: "feminine",
+    singular: "Freundin",
+    plural: "Freundinnen"
+  },
+
+  haus: {
+    lemma: "Haus",
+    pos: "NOUN",
+    gender: "neuter",
+    singular: "Haus",
+    plural: "Häuser"
   }
 
-};
+});
 
 
-function analyzeWord(word) {
 
-  return (
-    TEST_MORPHOLOGY[word]
-    ||
-    null
-  );
+function analyzeWord(
+  word
+) {
+
+  const normalized =
+    word.toLowerCase();
+
+
+
+  const noun =
+    NOUN_LEXICON[
+      normalized
+    ];
+
+
+
+  if (noun) {
+
+    return {
+
+      value:
+        word,
+
+      morphology: {
+
+        lemma:
+          noun.lemma,
+
+        pos:
+          noun.pos,
+
+        gender:
+          noun.gender,
+
+        number:
+          "singular",
+
+        singularForm:
+          noun.singular,
+
+        pluralForm:
+          noun.plural
+
+      }
+
+    };
+
+  }
+
+
+
+  return {
+
+    value:
+      word,
+
+    morphology: {
+
+      lemma:
+        normalized,
+
+      pos:
+        "UNKNOWN"
+
+    }
+
+  };
 
 }

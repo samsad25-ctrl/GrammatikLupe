@@ -1,0 +1,303 @@
+const ADJECTIVE_RULES = Object.freeze({
+
+  /*
+   ============================================================
+   1. BESTIMMTER ARTIKEL
+   der / die / das
+   ============================================================
+  */
+
+  definite: {
+
+    Nominativ: {
+      masculine: "e",
+      feminine: "e",
+      neuter: "e",
+      plural: "en"
+    },
+
+    Akkusativ: {
+      masculine: "en",
+      feminine: "e",
+      neuter: "e",
+      plural: "en"
+    },
+
+    Dativ: {
+      masculine: "en",
+      feminine: "en",
+      neuter: "en",
+      plural: "en"
+    },
+
+    Genitiv: {
+      masculine: "en",
+      feminine: "en",
+      neuter: "en",
+      plural: "en"
+    }
+
+  },
+
+
+
+  /*
+   ============================================================
+   2. UNBESTIMMT / KEIN / POSSESSIV
+   ein / kein / mein / dein ...
+   ============================================================
+  */
+
+  indefinite: {
+
+    Nominativ: {
+      masculine: "er",
+      feminine: "e",
+      neuter: "es",
+      plural: "en"
+    },
+
+    Akkusativ: {
+      masculine: "en",
+      feminine: "e",
+      neuter: "es",
+      plural: "en"
+    },
+
+    Dativ: {
+      masculine: "en",
+      feminine: "en",
+      neuter: "en",
+      plural: "en"
+    },
+
+    Genitiv: {
+      masculine: "en",
+      feminine: "en",
+      neuter: "en",
+      plural: "en"
+    }
+
+  },
+
+
+
+  /*
+   ============================================================
+   3. NULLARTIKEL
+   ============================================================
+  */
+
+  zero: {
+
+    Nominativ: {
+      masculine: "er",
+      feminine: "e",
+      neuter: "es",
+      plural: "e"
+    },
+
+    Akkusativ: {
+      masculine: "en",
+      feminine: "e",
+      neuter: "es",
+      plural: "e"
+    },
+
+    Dativ: {
+      masculine: "em",
+      feminine: "er",
+      neuter: "em",
+      plural: "en"
+    },
+
+    Genitiv: {
+      masculine: "en",
+      feminine: "er",
+      neuter: "en",
+      plural: "er"
+    }
+
+  }
+
+});
+
+
+
+
+
+/*
+============================================================
+ENDUNG ERMITTELN
+============================================================
+*/
+
+
+function getAdjectiveEnding({
+
+  articleType,
+
+  grammaticalCase,
+
+  gender,
+
+  number
+
+}) {
+
+
+  const ruleGroup =
+    ADJECTIVE_RULES[
+      articleType
+    ];
+
+
+
+  if(!ruleGroup){
+
+    return null;
+
+  }
+
+
+
+  const caseRule =
+    ruleGroup[
+      grammaticalCase
+    ];
+
+
+
+  if(!caseRule){
+
+    return null;
+
+  }
+
+
+
+  if(
+    number === "plural"
+  ){
+
+    return caseRule.plural;
+
+  }
+
+
+
+  return (
+    caseRule[gender]
+    ||
+    null
+  );
+
+}
+
+
+
+
+
+/*
+============================================================
+STAMMFORM
+============================================================
+*/
+
+
+function getAdjectiveStem(
+  adjective
+){
+
+  return adjective.replace(
+
+    /(e|en|er|es|em)$/u,
+
+    ""
+
+  );
+
+}
+
+
+
+
+
+/*
+============================================================
+FORM PRÜFEN
+============================================================
+*/
+
+
+function analyzeAdjectiveForm({
+
+  adjective,
+
+  articleType,
+
+  grammaticalCase,
+
+  gender,
+
+  number
+
+}) {
+
+
+  const expectedEnding =
+    getAdjectiveEnding({
+
+      articleType,
+
+      grammaticalCase,
+
+      gender,
+
+      number
+
+    });
+
+
+
+  if(!expectedEnding){
+
+    return null;
+
+  }
+
+
+
+  const stem =
+    getAdjectiveStem(
+      adjective
+    );
+
+
+
+  const expectedForm =
+    stem +
+    expectedEnding;
+
+
+
+  return {
+
+    observed:
+      adjective,
+
+
+    expected:
+      expectedForm,
+
+
+    expectedEnding,
+
+
+    correct:
+
+      adjective === expectedForm
+
+  };
+
+}

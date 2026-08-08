@@ -1,9 +1,5 @@
 const DETERMINER_LEXICON = Object.freeze({
 
-  /*
-   * Bestimmte Artikel
-   */
-
   der:{
     type:"definite",
     gender:"masculine",
@@ -12,6 +8,7 @@ const DETERMINER_LEXICON = Object.freeze({
       "nominative"
     ]
   },
+
 
   die:{
     type:"definite",
@@ -22,6 +19,7 @@ const DETERMINER_LEXICON = Object.freeze({
       "accusative"
     ]
   },
+
 
   das:{
     type:"definite",
@@ -62,11 +60,6 @@ const DETERMINER_LEXICON = Object.freeze({
       "genitive"
     ]
   },
-
-
-  /*
-   * Unbestimmte Artikel
-   */
 
 
   ein:{
@@ -121,87 +114,61 @@ const DETERMINER_LEXICON = Object.freeze({
   },
 
 
-  eines:{
-    type:"indefinite",
-    gender:"neuter",
-    number:"singular",
-    cases:[
-      "genitive"
-    ]
-  },
-
-
-  /*
-   * Possessivartikel
-   */
-
-
   mein:{
     type:"possessive",
     person:"first",
+    gender:"masculine",
     number:"singular",
-    features:{
-      gender:"masculine",
-      possibleCases:[
-        "nominative"
-      ]
-    }
+    cases:[
+      "nominative"
+    ]
   },
 
 
   meine:{
     type:"possessive",
     person:"first",
+    gender:"feminine",
     number:"singular",
-    features:{
-      gender:"feminine",
-      possibleCases:[
-        "nominative",
-        "accusative"
-      ]
-    }
+    cases:[
+      "nominative",
+      "accusative"
+    ]
   },
 
 
   meinen:{
     type:"possessive",
     person:"first",
+    gender:"masculine",
     number:"singular",
-    features:{
-      gender:"masculine",
-      possibleCases:[
-        "accusative"
-      ]
-    }
+    cases:[
+      "accusative"
+    ]
   },
 
 
   meinem:{
     type:"possessive",
     person:"first",
+    gender:"masculine",
     number:"singular",
-    features:{
-      gender:"masculine",
-      possibleCases:[
-        "dative"
-      ]
-    }
+    cases:[
+      "dative"
+    ]
   },
 
 
   meiner:{
     type:"possessive",
     person:"first",
+    gender:"feminine",
     number:"singular",
-    features:{
-      gender:"feminine",
-      possibleCases:[
-        "dative",
-        "genitive"
-      ]
-    }
+    cases:[
+      "dative",
+      "genitive"
+    ]
   }
-
 
 });
 
@@ -215,17 +182,17 @@ function analyzeDeterminer(
     word.toLowerCase();
 
 
-
-  if(
-    !DETERMINER_LEXICON[
+  const entry =
+    DETERMINER_LEXICON[
       normalized
-    ]
-  ){
+    ];
+
+
+  if(!entry){
 
     return null;
 
   }
-
 
 
   return {
@@ -233,12 +200,8 @@ function analyzeDeterminer(
     value:
       word,
 
-    lemma:
-      normalized,
-
-    ...DETERMINER_LEXICON[
-      normalized
-    ]
+    morphology:
+      entry
 
   };
 

@@ -8,17 +8,22 @@ function parseNominalGroups(tokens) {
   tokens.forEach(
     (token, index) => {
 
+
       /*
-       * Nur Artikel starten
-       * eine Nominalgruppe
+       * Nur Determiner können
+       * eine Nominalgruppe eröffnen
        */
+
       if (
         !PARSER_ARTICLES.includes(
           token.lower
         )
       ) {
+
         return;
+
       }
+
 
 
       const next =
@@ -29,9 +34,20 @@ function parseNominalGroups(tokens) {
         tokens[index + 2];
 
 
+
       if (!next) {
+
         return;
+
       }
+
+
+
+      const determiner =
+        analyzeDeterminer(
+          token.value
+        );
+
 
 
       /*
@@ -41,9 +57,11 @@ function parseNominalGroups(tokens) {
        * die Stadt
        * meine Schwester
        */
+
       if (
         isLikelyNoun(next)
       ) {
+
 
         const nounInfo =
           analyzeWord(
@@ -51,15 +69,19 @@ function parseNominalGroups(tokens) {
           );
 
 
+
         groups.push({
 
           id,
 
+
           text:
             `${token.value} ${next.value}`,
 
+
           start:
             token.index,
+
 
           end:
             next.index,
@@ -68,6 +90,12 @@ function parseNominalGroups(tokens) {
           sentenceIndex:
             token.sentenceIndex,
 
+
+
+          /*
+           * alte Struktur
+           * bleibt erhalten
+           */
 
           article: {
 
@@ -82,7 +110,25 @@ function parseNominalGroups(tokens) {
           },
 
 
+
+          /*
+           * neue Grammatikschicht
+           */
+
+          determiner: {
+
+            value:
+              token.value,
+
+            morphology:
+              determiner
+
+          },
+
+
+
           adjectives: [],
+
 
 
           noun: {
@@ -92,8 +138,11 @@ function parseNominalGroups(tokens) {
 
             morphology:
               nounInfo
+                ? nounInfo.morphology
+                : null
 
           },
+
 
 
           modifiers: []
@@ -101,10 +150,14 @@ function parseNominalGroups(tokens) {
         });
 
 
+
         id++;
 
+
         return;
+
       }
+
 
 
       /*
@@ -113,10 +166,15 @@ function parseNominalGroups(tokens) {
        * Beispiel:
        * die kleine Stadt
        */
+
       if (
+
         nextNext &&
+
         isLikelyAdjective(next) &&
+
         isLikelyNoun(nextNext)
+
       ) {
 
 
@@ -124,6 +182,7 @@ function parseNominalGroups(tokens) {
           analyzeWord(
             nextNext.value
           );
+
 
 
         groups.push({
@@ -135,6 +194,7 @@ function parseNominalGroups(tokens) {
             `${token.value} ${next.value} ${nextNext.value}`,
 
 
+
           start:
             token.index,
 
@@ -143,14 +203,17 @@ function parseNominalGroups(tokens) {
             nextNext.index,
 
 
+
           sentenceIndex:
             token.sentenceIndex,
+
 
 
           article: {
 
             value:
               token.value,
+
 
             type:
               detectArticleType(
@@ -160,6 +223,20 @@ function parseNominalGroups(tokens) {
           },
 
 
+
+          determiner: {
+
+            value:
+              token.value,
+
+
+            morphology:
+              determiner
+
+          },
+
+
+
           adjectives: [
 
             next.value
@@ -167,15 +244,20 @@ function parseNominalGroups(tokens) {
           ],
 
 
+
           noun: {
 
             value:
               nextNext.value,
 
+
             morphology:
               nounInfo
+                ? nounInfo.morphology
+                : null
 
           },
+
 
 
           modifiers: []
@@ -183,17 +265,22 @@ function parseNominalGroups(tokens) {
         });
 
 
+
         id++;
+
 
       }
 
+
     }
+
   );
 
 
   return groups;
 
 }
+
 
 
 
@@ -222,6 +309,7 @@ const PARSER_ARTICLES = [
   "keiner",
   "keines",
 
+
   "mein",
   "meine",
   "meinen",
@@ -229,14 +317,48 @@ const PARSER_ARTICLES = [
   "meiner",
   "meines",
 
+
   "dein",
   "deine",
   "deinen",
   "deinem",
   "deiner",
-  "deines"
+  "deines",
+
+
+  "sein",
+  "seine",
+  "seinen",
+  "seinem",
+  "seiner",
+  "seines",
+
+
+  "ihr",
+  "ihre",
+  "ihren",
+  "ihrem",
+  "ihrer",
+  "ihres",
+
+
+  "unser",
+  "unsere",
+  "unseren",
+  "unserem",
+  "unserer",
+  "unseres",
+
+
+  "euer",
+  "eure",
+  "euren",
+  "eurem",
+  "eurer",
+  "eures"
 
 ];
+
 
 
 
@@ -244,7 +366,9 @@ const PARSER_ARTICLES = [
 function isLikelyNoun(token) {
 
   if (!token) {
+
     return false;
+
   }
 
 
@@ -257,10 +381,13 @@ function isLikelyNoun(token) {
 
 
 
+
 function isLikelyAdjective(token) {
 
   if (!token) {
+
     return false;
+
   }
 
 
@@ -273,27 +400,64 @@ function isLikelyAdjective(token) {
 
 
 
-function detectArticleType(value) {
+
+function detectArticleType(
+  value
+) {
 
   const lower =
     value.toLowerCase();
 
 
+
   if (
+
     [
+
       "mein",
       "meine",
       "meinen",
       "meinem",
       "meiner",
       "meines",
+
       "dein",
       "deine",
       "deinen",
       "deinem",
       "deiner",
-      "deines"
+      "deines",
+
+      "sein",
+      "seine",
+      "seinen",
+      "seinem",
+      "seiner",
+      "seines",
+
+      "ihr",
+      "ihre",
+      "ihren",
+      "ihrem",
+      "ihrer",
+      "ihres",
+
+      "unser",
+      "unsere",
+      "unseren",
+      "unserem",
+      "unserer",
+      "unseres",
+
+      "euer",
+      "eure",
+      "euren",
+      "eurem",
+      "eurer",
+      "eures"
+
     ].includes(lower)
+
   ) {
 
     return "possessive";
@@ -301,20 +465,26 @@ function detectArticleType(value) {
   }
 
 
+
   if (
+
     [
+
       "ein",
       "eine",
       "einen",
       "einem",
       "einer",
       "eines"
+
     ].includes(lower)
+
   ) {
 
     return "indefinite";
 
   }
+
 
 
   return "definite";
